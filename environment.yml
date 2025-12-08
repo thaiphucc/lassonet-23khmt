@@ -1,0 +1,16 @@
+name: lassonet
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - scipy
+  - matplotlib
+  - scikit-learn
+  - pytorch
+  - torchvision
+  - jupyter
+  - pip:
+    - -r requirements.txt
