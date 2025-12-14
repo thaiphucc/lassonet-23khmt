@@ -12,7 +12,9 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+import torch
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
 PLOT_AVAILABLE = True
     
 # helper to compute accuracy
@@ -44,12 +46,12 @@ def main():
         hidden_dims=hidden_dim, 
         epochs=EPOCHS,
         M=10, 
+        device=device,
         optim_lr=LR,
         verbose=True,
         batch_size=BATCH_SIZE,
         patience=PATIENCE
     )
-    
     print("Training model...")
     # fit returns self, path returns path_results
     path = model.path(X_train, y_train, validation_split=0.125)
@@ -85,6 +87,48 @@ def main():
             desired_save = save
             SELECTED_FEATURES = mask
             break
+    
+    # for step in path:
+    #     # Load state
+    #     model.model.layers.load_state_dict(step['W'])
+    #     # 'theta' is numpy array, need to convert to tensor and put in skip.weight
+    #     model.model.skip.weight.data = torch.from_numpy(step['theta']).to(model.device)
+        
+    #     # Predict
+    #     model.model.eval()
+    #     with torch.no_grad():
+    #         logits = model.model(X_test_t)
+    #         predictions = torch.argmax(logits, dim=1).numpy()
+        
+    #     acc = accuracy_score(y_test, predictions)
+        
+    #     n_features.append(step['k'])
+    #     accuracies.append(acc)
+    #     print(f"Features: {step['k']}, Accuracy: {acc:.4f}")
+
+    # Plotting
+    if PLOT_AVAILABLE:
+        lambdas = [step['lambda'] for step in path]
+        
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+        
+        color = 'tab:blue'
+        ax1.set_xlabel('Number of Features')
+        ax1.set_ylabel('Classification Accuracy', color=color)
+        ax1.plot(n_features, accuracies, marker='o', color=color)
+        ax1.tick_params(axis='y', labelcolor=color)
+        ax1.grid(True)
+        
+        ax2 = ax1.twinx()
+        color = 'tab:red'
+        ax2.set_ylabel('Lambda', color=color)
+        ax2.plot(n_features, lambdas, marker='x', linestyle='--', color=color)
+        ax2.tick_params(axis='y', labelcolor=color)
+        
+        plt.title('Regularization Path: Accuracy & Lambda vs Features')
+        plt.savefig('regularization_path.png')
+        print("Plot saved to regularization_path.png")
+
             
     if desired_save is None:
         print("Could not find a model with <= {} features".format(K))
@@ -103,7 +147,7 @@ def main():
         M=10,
         hidden_dims=hidden_dim, # Using original hidden dims configuration
         verbose=True,
-        device=model.device,
+        device=device,
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
         optim_lr=LR
@@ -119,12 +163,12 @@ def main():
     )
 
     # Evaluate the model on the test data
-    scores = eval_on_path(lasso_sparse, path_sparse, X_test_selected, y_test, score_function=score_function)
+    scores = eval_on_path(lasso_sparse, path_sparse[:1], X_test_selected, y_test, score_function=score_function)
     print("Test accuracy (retrained):", scores[0])
 
     # Save the path
-    # with open(f"{dataset}_path.pkl", "wb") as f:
-    #     pickle.dump(path_sparse, f)
+    with open(f"{dataset}_path.pkl", "wb") as f:
+        pickle.dump(path_sparse, f)
     # Skipping file save for now unless requested, or just print.
 
 if __name__ == "__main__":
