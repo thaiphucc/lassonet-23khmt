@@ -1,36 +1,28 @@
-# https://github.com/lasso-net/lassonet/blob/master/experiments/data_utils.py
-import pickle
-from collections import defaultdict
-from os.path import join
-from pathlib import Path
-
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
+from PIL import Image
 
-# The code to load some of these datasets is reproduced from
-# https://github.com/mfbalin/Concrete-Autoencoders/blob/master/experiments/generate_comparison_figures.py
-
-
-def load_mice(one_hot=False):
+def load_mice_protein(one_hot=False):
     filling_value = -100000
     X = np.genfromtxt(
-        "/home/lemisma/datasets/MICE/Data_Cortex_Nuclear.csv",
+        "../data/mice_protein/Data_Cortex_Nuclear.csv",
         delimiter=",",
         skip_header=1,
-        usecols=range(1, 78),
+        usecols=(1, 78),
         filling_values=filling_value,
         encoding="UTF-8",
     )
     classes = np.genfromtxt(
-        "/home/lemisma/datasets/MICE/Data_Cortex_Nuclear.csv",
+        "../data/mice_protein/Data_Cortex_Nuclear.csv",
         delimiter=",",
         skip_header=1,
         usecols=range(78, 81),
         dtype=None,
         encoding="UTF-8",
     )
-
     for i, row in enumerate(X):
         for j, val in enumerate(row):
             if val == filling_value:
@@ -41,147 +33,23 @@ def load_mice(one_hot=False):
                         if np.all(classes[i] == classes[k])
                     ]
                 )
-
+    X = MinMaxScaler().fit_transform(X)
     DY = np.zeros((classes.shape[0]), dtype=np.uint8)
     for i, row in enumerate(classes):
         for j, (val, label) in enumerate(zip(row, ["Control", "Memantine", "C/S"])):
             DY[i] += (2**j) * (val == label)
-
-    Y = np.zeros((DY.shape[0], np.unique(DY).shape[0]))
-    for idx, val in enumerate(DY):
-        Y[idx, val] = 1
-
-    X = MinMaxScaler(feature_range=(0, 1)).fit_transform(X)
-
-    indices = np.arange(X.shape[0])
-    np.random.shuffle(indices)
-    X = X[indices]
-    Y = Y[indices]
-    DY = DY[indices]
-    classes = classes[indices]
-
+    Y = OneHotEncoder().fit_transform(DY.reshape(-1, 1)).toarray()
     if not one_hot:
         Y = DY
-
-    X = X.astype(np.float32)
-    Y = Y.astype(np.float32)
-
-    print("X shape: {}, Y shape: {}".format(X.shape, Y.shape))
-
-    return (X[: X.shape[0] * 4 // 5], Y[: X.shape[0] * 4 // 5]), (
-        X[X.shape[0] * 4 // 5 :],
-        Y[X.shape[0] * 4 // 5 :],
-    )
-
-
-def load_isolet():
-    x_train = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet1+2+3+4.data",
-        delimiter=",",
-        usecols=range(0, 617),
-        encoding="UTF-8",
-    )
-    y_train = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet1+2+3+4.data",
-        delimiter=",",
-        usecols=[617],
-        encoding="UTF-8",
-    )
-    x_test = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet5.data",
-        delimiter=",",
-        usecols=range(0, 617),
-        encoding="UTF-8",
-    )
-    y_test = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet5.data",
-        delimiter=",",
-        usecols=[617],
-        encoding="UTF-8",
-    )
-
-    X = MinMaxScaler(feature_range=(0, 1)).fit_transform(
-        np.concatenate((x_train, x_test))
-    )
-    x_train = X[: len(y_train)]
-    x_test = X[len(y_train) :]
-
-    print(x_train.shape, y_train.shape)
-    print(x_test.shape, y_test.shape)
-
-    return (x_train, y_train - 1), (x_test, y_test - 1)
-
-
-import numpy as np
-
-
-def load_epileptic():
-    filling_value = -100000
-
-    X = np.genfromtxt(
-        "/home/lemisma/datasets/data.csv",
-        delimiter=",",
-        skip_header=1,
-        usecols=range(1, 179),
-        filling_values=filling_value,
-        encoding="UTF-8",
-    )
-    Y = np.genfromtxt(
-        "/homelemisma/datasets/data.csv",
-        delimiter=",",
-        skip_header=1,
-        usecols=range(179, 180),
-        encoding="UTF-8",
-    )
-
-    X = MinMaxScaler(feature_range=(0, 1)).fit_transform(X)
-
-    indices = np.arange(X.shape[0])
+    indices = np.arrange(X.shape[0])
     np.random.shuffle(indices)
     X = X[indices]
     Y = Y[indices]
-
-    print(X.shape, Y.shape)
-
-    return (X[:8000], Y[:8000]), (X[8000:], Y[8000:])
-
-
-import os
-
-from PIL import Image
-
-
-def load_coil():
-    samples = []
-    for i in range(1, 21):
-        for image_index in range(72):
-            obj_img = Image.open(
-                os.path.join(
-                    "/home/lemisma/datasets/coil-20-proc",
-                    "obj%d__%d.png" % (i, image_index),
-                )
-            )
-            rescaled = obj_img.resize((20, 20))
-            pixels_values = [float(x) for x in list(rescaled.getdata())]
-            sample = np.array(pixels_values + [i])
-            samples.append(sample)
-    samples = np.array(samples)
-    np.random.shuffle(samples)
-    data = samples[:, :-1]
-    targets = (samples[:, -1] + 0.5).astype(np.int64)
-    data = (data - data.min()) / (data.max() - data.min())
-
-    l = data.shape[0] * 4 // 5
-    train = (data[:l], targets[:l] - 1)
-    test = (data[l:], targets[l:] - 1)
-    print(train[0].shape, train[1].shape)
-    print(test[0].shape, test[1].shape)
-    return train, test
-
-
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
-
+    X = X.astype(np.float32)
+    Y = Y.astype(np.float32)
+    train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.2)
+    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
+    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
 
 def load_data(fashion=False, digit=None, normalize=False):
     if fashion:
@@ -258,62 +126,100 @@ def load_mnist_two_digits(digit1, digit2):
 
     return (X_train, y_train), (X_test, y_test)
 
+def load_isolet():
+    train_X = np.genfromtxt(
+        "../data/isolet/isolet1234.data",
+        delimiter=",",
+        usecols=range(0, 617),
+        encoding="UTF-8",
+    )
+    train_Y = np.genfromtxt(
+        "../data/isolet/isolet1234.data",
+        delimiter=",",
+        usecols=[617],
+        encoding="UTF-8",
+    )
+    test_X = np.genfromtxt(
+        "../data/isolet/isolet5.data",
+        delimiter=",",
+        usecols=range(0, 617),
+        encoding="UTF-8",
+    )
+    test_Y = np.genfromtxt(
+        "../data/isolet/isolet5.data",
+        delimiter=",",
+        usecols=[617],
+        encoding="UTF-8",
+    )
+    X = MinMaxScaler().fit_transform(np.concatenate((train_X, test_X)))
+    train_Y -= 1
+    test_Y -= 1
+    train_X = X[: len(train_Y)]
+    test_X = X[len(train_Y) :]
+    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
+    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
 
-import os
-
-from sklearn.preprocessing import MinMaxScaler
-
+def load_coil_20():
+    data = np.zeros((1440, 400))
+    targets = np.zeros(1440)
+    for i in range(1, 21):
+        for j in range(72):
+            obj_img = Image.open(
+                f"../data/coil-20/coil-20-proc/obj{i}_{j}.png"
+            )
+            rescaled = obj_img.resize((20, 20))
+            data[(i - 1) * 72 + j] = np.array(rescaled).reshape(400)
+            targets[(i - 1) * 72 + j] = i - 1
+    data = MinMaxScaler().fit_transform(data)
+    indices = np.arrange(data.shape[0])
+    np.random.shuffle(indices)
+    data = data[indices]
+    targets = targets[indices]
+    targets = targets.astype(np.int64)
+    train_X, test_X, train_Y, test_Y = train_test_split(data, targets, test_size=0.2)
+    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
+    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
 
 def load_activity():
-    x_train = np.loadtxt(
-        os.path.join("/home/lemisma/datasets/dataset_uci", "final_X_train.txt"),
+    train_X = np.genfromtxt(
+        "../data/activity/final_X_train.txt",
         delimiter=",",
         encoding="UTF-8",
     )
-    x_test = np.loadtxt(
-        os.path.join("/home/lemisma/datasets/dataset_uci", "final_X_test.txt"),
+    test_X = np.genfromtxt(
+        "../data/activity/final_X_test.txt",
         delimiter=",",
         encoding="UTF-8",
     )
-    y_train = (
-        np.loadtxt(
-            os.path.join("/home/lemisma/datasets/dataset_uci", "final_y_train.txt"),
-            delimiter=",",
-            encoding="UTF-8",
-        )
-        - 1
+    train_Y = np.genfromtxt(
+        "../data/activity/final_y_train.txt",
+        delimiter=",",
+        encoding="UTF-8",
     )
-    y_test = (
-        np.loadtxt(
-            os.path.join("/home/lemisma/datasets/dataset_uci", "final_y_test.txt"),
-            delimiter=",",
-            encoding="UTF-8",
-        )
-        - 1
+    test_Y = np.genfromtxt(
+        "../data/activity/final_y_test.txt",
+        delimiter=",",
+        encoding="UTF-8",
     )
-
-    X = MinMaxScaler(feature_range=(0, 1)).fit_transform(
-        np.concatenate((x_train, x_test))
-    )
-    x_train = X[: len(y_train)]
-    x_test = X[len(y_train) :]
-
-    print(x_train.shape, y_train.shape)
-    print(x_test.shape, y_test.shape)
-    return (x_train, y_train), (x_test, y_test)
-
+    X = MinMaxScaler().fit_transform(np.concatenate((train_X, test_X)))
+    train_Y -= 1
+    test_Y -= 1
+    train_X = X[: len(train_Y)]
+    test_X = X[len(train_Y) :]
+    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
+    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
 
 def load_dataset(dataset):
-    if dataset == "MNIST":
+    if dataset == "MICE":
+        return load_mice_protein()
+    elif dataset == "MNIST":
         return load_mnist()
     elif dataset == "MNIST-Fashion":
         return load_fashion()
-    if dataset == "MICE":
-        return load_mice()
-    elif dataset == "COIL":
-        return load_coil()
     elif dataset == "ISOLET":
         return load_isolet()
+    elif dataset == "COIL":
+        return load_coil_20()
     elif dataset == "Activity":
         return load_activity()
     else:
