@@ -48,8 +48,7 @@ def load_mice_protein(one_hot=False):
     X = X.astype(np.float32)
     Y = Y.astype(np.float32)
     train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.2)
-    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
-    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
+    return (train_X, train_Y), (test_X, test_Y)
 
 def load_data(fashion=False, digit=None, normalize=False):
     if fashion:
@@ -156,8 +155,7 @@ def load_isolet():
     test_Y -= 1
     train_X = X[: len(train_Y)]
     test_X = X[len(train_Y) :]
-    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
-    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
+    return (train_X, train_Y), (test_X, test_Y)
 
 def load_coil_20():
     data = np.zeros((1440, 400))
@@ -177,8 +175,7 @@ def load_coil_20():
     targets = targets[indices]
     targets = targets.astype(np.int64)
     train_X, test_X, train_Y, test_Y = train_test_split(data, targets, test_size=0.2)
-    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
-    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
+    return (train_X, train_Y), (test_X, test_Y)
 
 def load_activity():
     train_X = np.genfromtxt(
@@ -206,8 +203,7 @@ def load_activity():
     test_Y -= 1
     train_X = X[: len(train_Y)]
     test_X = X[len(train_Y) :]
-    train_X, val_X, train_Y, val_Y = train_test_split(train_X, train_Y, test_size=0.125)
-    return (train_X, train_Y), (val_X, val_Y), (test_X, test_Y)
+    return (train_X, train_Y), (test_X, test_Y)
 
 def load_dataset(dataset):
     if dataset == "MICE":
