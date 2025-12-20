@@ -28,7 +28,7 @@ class LassoNet(nn.Module):
         self.layers = nn.ModuleList(
             [nn.Linear(dims[i], dims[i + 1]) for i in range(len(dims) - 1)]
         )
-        # Lớp skip connection (linear part) W^T x
+        # Lớp skip connection (linear part) W^T x. skip.weight.data ở đây là W^T
         # Đây là thành phần chính để lựa chọn đặc trưng.
         # Trọng số của lớp này sẽ bị ràng buộc bởi norm của lớp ẩn đầu tiên.
         self.skip = nn.Linear(dims[0], dims[-1], bias=False)

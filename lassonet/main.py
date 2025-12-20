@@ -2,7 +2,7 @@
 import sys
 import os
 import pickle
-# Add the parent directory to sys.path to resolve imports if running from lassonet directly
+# Thêm thư mục cha vào sys.path để giải quyết việc import nếu chạy trực tiếp từ thư mục lassonet
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lassonet.trainer import LassoNetClassifier
@@ -21,18 +21,18 @@ import re
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 PLOT_AVAILABLE = True
-# Hardcoded Experiment Parameters
+# Các tham số thí nghiệm được fix cứng (Hardcoded Experiment Parameters)
 BATCH_SIZE = 256
 EPOCHS = 1000
 LR = 1e-3
 PATIENCE = 10
 dataset = "MNIST"
-K = 50 # Our goal: select 50 features
+K = 50 # Mục tiêu của chúng ta: chọn 50 đặc trưng
 
 # Biến debug để tìm lỗi tước khi chạy train thật
 DEBUGGING = False
 
-# helper to compute accuracy
+# Hàm hỗ trợ tính toán độ chính xác (accuracy)
 def score_function(y_true, y_pred):
     return accuracy_score(y_true, y_pred)
 
@@ -41,11 +41,11 @@ def save_artifacts(estimator, X, y, prefix):
     if not path:
         return
         
-    # Save pickle
+    # Lưu file pickle
     with open(f"{prefix}_path.pkl", "wb") as f:
         pickle.dump(path, f)
     
-    # Eval and Plot
+    # Đánh giá và Vẽ biểu đồ (Eval and Plot)
     if PLOT_AVAILABLE:
         try:
             accuracies = eval_on_path(estimator, path, X, y, score_function=score_function)
@@ -81,16 +81,19 @@ def _load_dataset():
     return (X_train, y_train), (X_test, y_test)
 
 def tune_M_downstream():
+    """
+    Huấn luyện downstream trên các (M, tập đặc trưng) được chọn bởi tune_M(), để đánh giá accuracy cho phân lớp
+    """
     (X_train, y_train), (X_test, y_test) = _load_dataset()
     
     data_dim = X_train.shape[1]
     hidden_dim = (data_dim // 3,)
     
-    # K is global
+    # K là biến toàn cục
     print(f"Target features K={K}")
 
-    # Glob pkl files
-    # Format: tune_M_{M_val}_{run_id}_path.pkl
+    # Tìm các file pkl (Glob)
+    # Định dạng: tune_M_{M_val}_{run_id}_path.pkl
     pkl_files = glob.glob("run_cv_3/tune_M_*_path.pkl")
     
     if not pkl_files:
@@ -99,7 +102,7 @@ def tune_M_downstream():
 
     print(f"Found {len(pkl_files)} pkl files: {pkl_files}")
 
-    # Grid search Ms
+    # Grid search các giá trị M
     target_Ms = {5, 10, 15}
     processed_Ms = set()
     files_to_process = []
@@ -119,7 +122,7 @@ def tune_M_downstream():
     for pkl_file in files_to_process:
         print(f"\nProcessing {pkl_file}...")
         
-        # Parse M from filename
+        # Lấy M từ tên file
         # tune_M_1_5811b978_path.pkl
         match = re.search(r"tune_M_(\d+)_", pkl_file)
         M_val = int(match.group(1))
@@ -130,7 +133,7 @@ def tune_M_downstream():
         print(f"Extracted M={M_val}")
         done_Ms.add(M_val)
         
-        # Load path
+        # Load đường dẫn (path)
         with open(pkl_file, "rb") as f:
             path = pickle.load(f)
             
@@ -138,7 +141,7 @@ def tune_M_downstream():
             print("Empty path, skipping.")
             continue
             
-        # Select features
+        # Chọn đặc trưng
         desired_save = None
         for save in path:
             theta = save['theta']
@@ -150,7 +153,7 @@ def tune_M_downstream():
                 break
         
         if desired_save is None:
-            # Fallback
+            # Dự phòng
             desired_save = path[-1]
             theta = desired_save['theta']
             SELECTED_FEATURES = (np.linalg.norm(theta, axis=0) > 1e-5)
@@ -162,13 +165,13 @@ def tune_M_downstream():
              print("No features selected, skipping.")
              continue
 
-        # Subset data
+        # Lấy tập con dữ liệu
         X_train_selected = X_train[:, SELECTED_FEATURES]
         X_test_selected = X_test[:, SELECTED_FEATURES]
 
-        # Train from scratch
+        # Huấn luyện lại từ đầu
         # Downstream Learner: decoder
-        # "run lasso_sparse again (retrain)"
+        # "chạy lasso_sparse lần nữa (huấn luyện lại)"
         lasso_sparse = LassoNetClassifier(
             M=M_val,
             hidden_dims=(3, ) if DEBUGGING else hidden_dim, 
@@ -188,35 +191,39 @@ def tune_M_downstream():
             lambda_seq=[0]
         )
 
-        # Evaluate the model on the test data
+        # Đánh giá mô hình trên tập kiểm tra
         scores = eval_on_path(lasso_sparse, path_sparse[:1], X_test_selected, y_test)
         print("Test accuracy (retrained):", scores[0])
 
 
 def tune_M():
+    """
+    Cross-Validation 3-fold để lựa chọn model lựa chọn đặc trưng (LassoNet) tốt nhất 
+    bằng Grid-Search trên siêu tham số M
+    """
     (X_train, y_train), (X_test, y_test) = _load_dataset()
     
     data_dim = X_train.shape[1]
     hidden_dim = (data_dim // 3,)
     
-    # 1. Define estimator
+    # 1. Định nghĩa estimator
     model = LassoNetClassifier(
         hidden_dims=(3, ) if DEBUGGING else hidden_dim, 
         epochs=1 if DEBUGGING else EPOCHS,
         device=device,
         optim_lr=LR,
-        verbose=False, # Reduce verbosity for grid search
+        verbose=False, # Giảm độ chi tiết (verbosity) cho grid search
         batch_size=BATCH_SIZE,
         patience=PATIENCE
     )
 
-    # 2. Define custom scorer
-    # We want to pick value of M that yields best accuracy at K features
+    # 2. Định nghĩa custom scorer
+    # Chúng ta muốn chọn giá trị M mang lại độ chính xác tốt nhất tại K feature
     def scorer(estimator, X, y):
         path = estimator.path_results_
         
-        # Save artifacts for this fold
-        # Generate unique ID
+        # Lưu các artifact cho fold này
+        # Tạo ID duy nhất
         run_id = str(uuid.uuid4())[:8]
         M_val = estimator.M
         prefix = f"tune_M_{M_val}_{run_id}"
@@ -231,17 +238,17 @@ def tune_M():
                 break
         
         if not path:
-             # If path is empty (model didn't converge or find sparse solutions), return 0
+             # Nếu path rỗng (mô hình không hội tụ hoặc không tìm thấy giải pháp thưa), trả về 0.0
              return 0.0
 
-        # Now we need to evaluate this specific step on the provided X, y (which is validation set in CV)
-        # Load the weights
+        # Bây giờ chúng ta cần đánh giá bước cụ thể này trên X, y được cung cấp (đây là tập validation trong CV)
+        # Load trọng số
         estimator.load(selected_step)
         
-        # Score
+        # Tính điểm
         return estimator.score(X, y)
 
-    # 3. Setup GridSearchCV
+    # 3. Thiết lập GridSearchCV
     param_grid = {
         'M': [5, 10, 15]
     }
@@ -251,7 +258,7 @@ def tune_M():
         param_grid=param_grid,
         cv=3,
         scoring=scorer,
-        n_jobs=1, # GPU might conflict if parallel
+        n_jobs=1, # GPU có thể xung đột nếu chạy song song
         verbose=3
     )
     
@@ -264,6 +271,9 @@ def tune_M():
     return grid.best_params_
 
 def main():
+    """
+    Với các tham số trên (biến toàn cục), chọn đặc trưng trên LassoNet => huấn luyện decoder (downstream learner)  
+    """
     (X_train, y_train), (X_test, y_test) = _load_dataset()
     if DEBUGGING:
         X_train = X_train[:50]
@@ -275,8 +285,9 @@ def main():
     print(f"Test label shape: {y_test.shape}")
     
     input_dim = X_train.shape[1]
-    output_dim = 10 # 10 classes for MNIST
+    output_dim = 10 # 10 lớp cho MNIST
     data_dim = X_test.shape[1]
+    # 1 Tầng ẩn: k/3 (như trong bài báo)
     hidden_dim = (data_dim // 3,)
     
     print("Initializing LassoNetClassifier...")
@@ -291,7 +302,7 @@ def main():
         patience=PATIENCE
     )
     print("Training model...")
-    # fit returns self, path returns path_results
+    # fit trả về self, path trả về path_results
     path = model.path(X_train, y_train, validation_split=0.125)
     
     print("Training complete.")
@@ -306,16 +317,14 @@ def main():
         print(f"Features: {k}, Accuracy: {acc:.4f}")
 
     # Plotting
-    K = 50 # Target features. Or iterate to find best.
+    K = 50 # Số feature mục tiêu. Hoặc lặp để tìm số tốt nhất.
     
+    # Lưu
     desired_save = None
     for save in path:
-        # Check sparsity
-        # theta is (input_dim, output_dim)
+        # Kiểm tra tính thưa (sparsity)
+        # theta có shape (input_dim, output_dim)
         theta = save['theta']
-        mask = (np.linalg.norm(theta, axis=1) > 1e-5) # Axis 1 because skipped layers output is dim 0? 
-    
-        
         mask = (np.linalg.norm(theta, axis=0) > 1e-5)
         k = mask.sum()
         
@@ -363,25 +372,25 @@ def main():
         
         plt.title('Regularization Path: Accuracy & Lambda vs Features')
         plt.savefig('regularization_path.png')
-        print("Plot saved to regularization_path.png")
+        print("Biểu đồ đã được lưu vào regularization_path.png")
 
             
     if desired_save is None:
-        print("Could not find a model with <= {} features".format(K))
-        # Fallback to last
+        print("Không tìm thấy model với <= {} features".format(K))
+        # Fallback về model cuối cùng
         desired_save = path[-1]
         theta = desired_save['theta']
         SELECTED_FEATURES = (np.linalg.norm(theta, axis=0) > 1e-5)
 
     print("Number of selected features:", SELECTED_FEATURES.sum())
 
-    # Select the features from the training and test data
+    # Chọn các đặc trưng từ dữ liệu huấn luyện và kiểm tra
     X_train_selected = X_train[:, SELECTED_FEATURES]
     X_test_selected = X_test[:, SELECTED_FEATURES]
 
     lasso_sparse = LassoNetClassifier(
         M=10,
-        hidden_dims=hidden_dim, # Using original hidden dims configuration
+        hidden_dims=hidden_dim, # Sử dụng cấu hình hidden dims gốc
         verbose=True,
         device=device,
         epochs=EPOCHS,
@@ -398,15 +407,13 @@ def main():
         lambda_seq=[0]
     )
 
-    # Evaluate the model on the test data
+    # Đánh giá mô hình trên tập kiểm tra
     scores = eval_on_path(lasso_sparse, path_sparse[:1], X_test_selected, y_test, score_function=score_function)
     print("Test accuracy (retrained):", scores[0])
 
-    # Save the path
+    # Lưu với đường dẫn
     with open(f"{dataset}_path.pkl", "wb") as f:
         pickle.dump(path_sparse, f)
-    # Skipping file save for now unless requested, or just print.
-
 
 if __name__ == "__main__":
     main()
