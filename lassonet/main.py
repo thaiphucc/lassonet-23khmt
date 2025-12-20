@@ -78,6 +78,8 @@ def _load_dataset():
     if DEBUGGING:
         X_train = X_train[:20]
         y_train = y_train[:20]
+        X_test = X_test[:20]
+        y_test = y_test[:20]
     return (X_train, y_train), (X_test, y_test)
 
 def tune_M_downstream():
