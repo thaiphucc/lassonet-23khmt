@@ -3,6 +3,8 @@ import pickle
 from collections import defaultdict
 from os.path import join
 from pathlib import Path
+import tensorflow_datasets as tfds
+import gzip
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -182,6 +184,19 @@ def load_coil():
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
+def read_mnist(mnist_file):
+    if os.path.isfile(mnist_file) == False:
+        mnist_file = os.path.join('data', 'mnist.pkl.gz')
+    
+    f = gzip.open(mnist_file, 'rb')
+    train_data, val_data, test_data = pickle.load(f, encoding='latin1')
+    f.close()
+    
+    train_X, train_Y = train_data
+    val_X, val_Y = val_data
+    test_X, test_Y = test_data    
+    
+    return train_X, train_Y, val_X, val_Y, test_X, test_Y
 
 def load_data(fashion=False, digit=None, normalize=False):
     if fashion:
@@ -210,7 +225,6 @@ def load_data(fashion=False, digit=None, normalize=False):
         np.float32
     )
     x_test = x_test.reshape((-1, x_test.shape[1] * x_test.shape[2])).astype(np.float32)
-
     if normalize:
         X = np.concatenate((x_train, x_test))
         X = (X - X.min()) / (X.max() - X.min())
@@ -224,7 +238,8 @@ def load_data(fashion=False, digit=None, normalize=False):
 
 def load_mnist():
     train, test = load_data(fashion=False, normalize=True)
-    x_train, x_test, y_train, y_test = train_test_split(test[0], test[1], test_size=0.2)
+    # x_train, x_test, y_train, y_test = train_test_split(test[0], test[1], test_size=0.2)
+    x_train, x_test, y_train, y_test = train[0], test[0], train[1], test[1]
     return (x_train, y_train), (x_test, y_test)
 
 

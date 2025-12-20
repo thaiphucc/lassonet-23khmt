@@ -6,7 +6,7 @@ import torch
 
 def eval_on_path(model, path, X_test, y_test, *, score_function=None):
     if score_function is None:
-        score_fun = model.score
+        score_fun = model.score # ClassifierMixin.score = mean accuracy
     else:
         assert callable(score_function)
 
