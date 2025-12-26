@@ -66,47 +66,6 @@ def load_mice_protein(one_hot=False):
     )
 
 
-def load_isolet():
-    x_train = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet1+2+3+4.data",
-        delimiter=",",
-        usecols=range(0, 617),
-        encoding="UTF-8",
-    )
-    y_train = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet1+2+3+4.data",
-        delimiter=",",
-        usecols=[617],
-        encoding="UTF-8",
-    )
-    x_test = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet5.data",
-        delimiter=",",
-        usecols=range(0, 617),
-        encoding="UTF-8",
-    )
-    y_test = np.genfromtxt(
-        "/home/lemisma/datasets/isolet/isolet5.data",
-        delimiter=",",
-        usecols=[617],
-        encoding="UTF-8",
-    )
-
-    X = MinMaxScaler(feature_range=(0, 1)).fit_transform(
-        np.concatenate((x_train, x_test))
-    )
-    x_train = X[: len(y_train)]
-    x_test = X[len(y_train) :]
-
-    print(x_train.shape, y_train.shape)
-    print(x_test.shape, y_test.shape)
-
-    return (x_train, y_train - 1), (x_test, y_test - 1)
-
-
-import numpy as np
-
-
 def load_epileptic():
     filling_value = -100000
 
@@ -229,8 +188,8 @@ def load_data(fashion=False, digit=None, normalize=False):
 def load_mnist():
     train, test = load_data(fashion=False, normalize=True)
     # Ít data để train nhanh hơn, cả dataset MNIST tốn hơn 40 phút vẫn chưa xong
-    x_train, x_test, y_train, y_test = train_test_split(test[0], test[1], test_size=0.2)
-    # x_train, x_test, y_train, y_test = train[0], test[0], train[1], test[1]
+    # x_train, x_test, y_train, y_test = train_test_split(test[0], test[1], test_size=0.2)
+    x_train, x_test, y_train, y_test = train[0], test[0], train[1], test[1]
     return (x_train, y_train), (x_test, y_test)
 
 

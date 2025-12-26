@@ -26,7 +26,7 @@ BATCH_SIZE = 256
 EPOCHS = 1000
 LR = 1e-3
 PATIENCE = 10
-dataset = "MNIST"
+dataset = "ISOLET"
 K = 50 # Mục tiêu của chúng ta: chọn 50 đặc trưng
 
 # Biến debug để tìm lỗi tước khi chạy train thật

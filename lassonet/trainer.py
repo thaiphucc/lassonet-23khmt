@@ -205,7 +205,7 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
 
             if should_save:
                 if self.verbose:
-                    print(f"Features active: {current_k} (lambda={lam:.5f}) Val Loss: {val_score:.4f}")
+                    print(f"Features active: {current_k} (lambda={lam:.5f}) Val Score: {val_score:.4f}")
 
                 state_snapshot = {
                     'k': current_k,
@@ -249,7 +249,8 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
 
         def validation_obj(criterion):
             with torch.no_grad():
-                return criterion(self.model(X_val), y_val).item() + lambda_val * self.model.l1_regularization_skip().item()
+                out_val = self.model(X_val)
+                return out_val, criterion(out_val, y_val).item() + lambda_val * self.model.l1_regularization_skip().item()
 
         # --- Algorithm Step 6: For b in 1...B ---
         for epoch in range(epochs):
@@ -281,17 +282,17 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
             if X_val is not None:
                 self.model.eval()
                 with torch.no_grad():
-                    val_loss = validation_obj(criterion)
-                    # if mode == 'multiclass':
-                    #     pred = out_val.argmax(dim=1)
-                    #     acc = (pred == y_val).float().mean().item()
-                    # else:
-                    #     pred = (out_val > 0).float()
-                    #     acc = (pred == y_val).float().mean().item()
+                    out_val, val_loss = validation_obj(criterion)
+                    if mode == 'multiclass':
+                        pred = out_val.argmax(dim=1)
+                        acc = (pred == y_val).float().mean().item()
+                    else:
+                        pred = (out_val > 0).float()
+                        acc = (pred == y_val).float().mean().item()
                     
-                    # val_score = acc
+                    val_score = acc
                 
-                final_val_score = val_loss
+                final_val_score = val_score
                 final_val_loss = val_loss
 
                 if final_val_loss < best_inner_val: # Improvement

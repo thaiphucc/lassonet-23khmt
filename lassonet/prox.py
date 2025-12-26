@@ -62,7 +62,7 @@ def prox(v, u, *, lambda_, lambda_bar, M):
     # Công thức: w_{j,m} = M / (1 + m * M^2) * SoftThreshold(...)
     # Code thực hiện tính toán vector hóa cho tất cả m cùng lúc.
     
-    # Tính tổng tích lũy (prefix sum) của |W|
+    # Tính tổng tích lũy của |W|
     a_s = lambda_ - M * torch.cat(
         [zeros, torch.cumsum(u_abs_sorted - lambda_bar, dim=0)]
     )
