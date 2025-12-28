@@ -343,7 +343,7 @@ def load_mushroom():
     X = pd.get_dummies(X)
 
     print("Encoded columns:", X.columns.to_list())
-    
+
     # Chuyển đổi sang numpy array và kiểu float32
     X = X.values.astype(np.float32)
     Y = Y.astype(np.float32)

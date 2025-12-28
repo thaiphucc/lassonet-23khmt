@@ -288,6 +288,8 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
                         pred = out_val.argmax(dim=1)
                         acc = (pred == y_val).float().mean().item()
                     else:
+                        # Output là logits (chưa sigmoid).
+                        # logits > 0 <=> sigmoid(logits) > 0.5
                         pred = (out_val > 0).float()
                         acc = (pred == y_val).float().mean().item()
                     
@@ -304,8 +306,8 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
                 
                 if self.patience is not None and patience_counter >= self.patience:
                     # Early Stop
-                    # if self.verbose: print(f"Early separating at epoch {epoch}")
                     break
+        
         
         return final_val_score, final_val_loss
 

@@ -64,8 +64,8 @@ def eval_binary_metrics(dataset, lasso_sparse, path_sparse, X_test_selected, y_t
 
 def calculate_and_plot_metrics(y_test, y_pred, y_prob=None, dataset=None, method_name="", roc_collection=None, eval_binary=False):
     # Metrics
-    y_test = y_test.astype(int)
-    y_pred = y_pred.astype(int)
+    y_test = y_test.astype(int).flatten()
+    y_pred = y_pred.astype(int).flatten()
 
     acc = accuracy_score(y_test, y_pred)
     print(f"Accuracy: {acc:.4f}")
