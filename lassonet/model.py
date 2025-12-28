@@ -73,7 +73,7 @@ class LassoNet(nn.Module):
                     # Giải bài toán tối ưu hóa - proximal operator
                     # Cập nhật beta (trọng số skip) và theta (trọng số lớp ẩn đầu)
                     # tuân theo ràng buộc phân cấp (hierarchy constraint): |W_j| <= M * ||V_j||
-                    new_v, new_u = prox(
+                    new_v, u = prox(
                         v,
                         u,
                         lambda_=lambda_,

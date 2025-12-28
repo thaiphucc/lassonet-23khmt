@@ -12,7 +12,7 @@ from .prox import inplace_prox, inplace_group_prox
 
 class LassoNetClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, hidden_dims=(100,), M=10, path_multiplier=0.02, 
-                 lambda_start=1e-4, optim_lr=1e-3, epochs=100, 
+                 lambda_start='auto', optim_lr=1e-3, epochs=100, 
                  device='cpu', verbose=False, patience=10, batch_size=None):
         """
         Args:
@@ -29,8 +29,7 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
         self.hidden_dims = hidden_dims
         self.M = M
         self.path_multiplier = path_multiplier
-        # self.lambda_start = lambda_start
-        self.lambda_start = 'auto'
+        self.lambda_start = lambda_start
         self.optim_lr = optim_lr
         self.device = device
         self.verbose = verbose
@@ -105,7 +104,7 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
              # Binary hoặc Regression - code giả định thiết lập binary/regression
              output_dim = 1
              y_t = torch.as_tensor(y_train, dtype=torch.float32).reshape(-1, 1).to(self.device)
-             criterion = nn.BCEWithLogitsLoss() # Tạm thời giả định phân loại nhị phân
+             criterion = nn.BCEWithLogitsLoss()
              self.mode = 'binary'
         mode = self.mode 
         
@@ -155,6 +154,8 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
                 / 10
             )
             print(f"lambda_start = {self.lambda_start_:.2e}")
+        else:
+            self.lambda_start_ = self.lambda_start
 
         if lambda_seq is None:
             def lambda_generator():

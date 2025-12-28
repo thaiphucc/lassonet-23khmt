@@ -9,7 +9,9 @@ import gzip
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+import pandas as pd
 import tensorflow as tf
 from PIL import Image
 
@@ -188,8 +190,8 @@ def load_data(fashion=False, digit=None, normalize=False):
 def load_mnist():
     train, test = load_data(fashion=False, normalize=True)
     # Ít data để train nhanh hơn, cả dataset MNIST tốn hơn 40 phút vẫn chưa xong
-    # x_train, x_test, y_train, y_test = train_test_split(test[0], test[1], test_size=0.2)
-    x_train, x_test, y_train, y_test = train[0], test[0], train[1], test[1]
+    x_train, x_test, y_train, y_test = train_test_split(test[0], test[1], test_size=0.2)
+    #x_train, x_test, y_train, y_test = train[0], test[0], train[1], test[1]
     return (x_train, y_train), (x_test, y_test)
 
 
@@ -225,25 +227,25 @@ def load_mnist_two_digits(digit1, digit2):
 
 def load_isolet():
     train_X = np.genfromtxt(
-        "../data/isolet/isolet1234.data",
+        "./data/isolet/isolet1234.data",
         delimiter=",",
         usecols=range(0, 617),
         encoding="UTF-8",
     )
     train_Y = np.genfromtxt(
-        "../data/isolet/isolet1234.data",
+        "./data/isolet/isolet1234.data",
         delimiter=",",
         usecols=[617],
         encoding="UTF-8",
     )
     test_X = np.genfromtxt(
-        "../data/isolet/isolet5.data",
+        "./data/isolet/isolet5.data",
         delimiter=",",
         usecols=range(0, 617),
         encoding="UTF-8",
     )
     test_Y = np.genfromtxt(
-        "../data/isolet/isolet5.data",
+        "./data/isolet/isolet5.data",
         delimiter=",",
         usecols=[617],
         encoding="UTF-8",
@@ -303,6 +305,54 @@ def load_activity():
     test_X = X[len(train_Y) :]
     return (train_X, train_Y), (test_X, test_Y)
 
+def load_mushroom():
+    # Đường dẫn đến file dữ liệu
+    root_dir = Path(__file__).parent.parent
+    path = root_dir / "data" / "mushrooms.csv"
+    
+    # Kiểm tra xem file đã tồn tại chưa, nếu chưa thì tải về từ UCI
+    if not path.exists():
+        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data"
+        column_names = [
+            "class", "cap-shape", "cap-surface", "cap-color", "bruises", "odor",
+            "gill-attachment", "gill-spacing", "gill-size", "gill-color",
+            "stalk-shape", "stalk-root", "stalk-surface-above-ring",
+            "stalk-surface-below-ring", "stalk-color-above-ring",
+            "stalk-color-below-ring", "veil-type", "veil-color", "ring-number",
+            "ring-type", "spore-print-color", "population", "habitat"
+        ]
+        # Đọc dữ liệu từ URL
+        df = pd.read_csv(url, header=None, names=column_names)
+        # Lưu lại file CSV để dùng cho lần sau
+        df.to_csv(path, index=False)
+    else:
+        # Đọc dữ liệu từ file CSV có sẵn
+        df = pd.read_csv(path)
+
+    # print("Original columns:", df.columns)
+
+    # Tách đặc trưng (X) và nhãn (Y)
+    Y = df["class"]
+    X = df.drop("class", axis=1)
+
+    # Label Encode cho nhãn Y
+    le = LabelEncoder()
+    Y = le.fit_transform(Y)
+
+    # One-hot encode cho các đặc trưng X
+    X = pd.get_dummies(X)
+
+    print("Encoded columns:", X.columns.to_list())
+    
+    # Chuyển đổi sang numpy array và kiểu float32
+    X = X.values.astype(np.float32)
+    Y = Y.astype(np.float32)
+
+    # Chia tập dữ liệu thành train và test
+    train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.2, random_state=42)
+    
+    return (train_X, train_Y), (test_X, test_Y)
+
 def load_dataset(dataset):
     if dataset == "MICE":
         return load_mice_protein()
@@ -316,6 +366,8 @@ def load_dataset(dataset):
         return load_coil_20()
     elif dataset == "Activity":
         return load_activity()
+    elif dataset == "Mushroom":
+        return load_mushroom()
     else:
         print("Please specify a valid dataset")
         return None
