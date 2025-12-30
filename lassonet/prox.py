@@ -11,7 +11,7 @@ def sign_binary(x):
     ones = torch.ones_like(x)
     return torch.where(x >= 0, ones, -ones)
 
-
+# Tối ưu = tính toán vector, khử vòng lặp
 def prox(v, u, *, lambda_, lambda_bar, M):
     """
     v has shape (m,) or (m, batches)
@@ -19,13 +19,12 @@ def prox(v, u, *, lambda_, lambda_bar, M):
 
     supports GPU tensors
     
-    Tài liệu hóa: Mapping với Algorithm 4 trong bài báo LassoNet (Group-Hier-Prox)
+    Tài liệu: Mapping với Algorithm 4 trong bài báo LassoNet (Group-Hier-Prox)
     Input:
     - v: Tương ứng với theta (trọng số lớp skip connection)
     - u: Tương ứng với W^(1) (trọng số lớp ẩn đầu tiên)
     - lambda_, M: siêu tham số
 
-    Giải thích sự tương thích với Algorithm 2 (Hier-Prox):
     Algorithm 2 là trường hợp đặc biệt của Algorithm 4 khi số chiều của theta là m=1 (scalar).
     
     1. Input:
@@ -41,8 +40,7 @@ def prox(v, u, *, lambda_, lambda_bar, M):
     4. Cập nhật theta_tilde (Line 8 Alg 2 vs Line 9 Alg 4):
        - Alg 4: theta <- (1/M) * w * (theta / ||theta||_2)
        - Alg 2: theta <- (1/M) * w * sign(theta)
-       - Với theta scalar: theta / ||theta||_2 = theta / |theta| = sign(theta).
-       - Vậy công thức cập nhật trùng khớp.
+       - Với theta scalar: theta / ||theta||_2 = theta / |theta| = sign(theta)..
     """
     onedim = len(v.shape) == 1
     if onedim:

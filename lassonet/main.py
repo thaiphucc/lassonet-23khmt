@@ -38,13 +38,13 @@ BATCH_SIZE = 256
 EPOCHS = 1000
 LR = 1e-3
 PATIENCE = 10
-dataset = "Mushroom"
-K = 9 + 9 + 7 + 5  # Mục tiêu của chúng ta K đặc trưng
-LAMBDA_START = 1.849
-PATH_MULTIPLIER = 0.04
-# K = 50
-# LAMBDA_START = 'auto'
-# PATH_MULTIPLIER = 0.02
+dataset = "MNIST"
+# K = 9 + 9 + 7 + 5  # Mục tiêu của chúng ta K đặc trưng
+# LAMBDA_START = 1.849
+# PATH_MULTIPLIER = 0.04
+K = 50
+LAMBDA_START = "auto"
+PATH_MULTIPLIER = 0.02
 # Biến debug để tìm lỗi tước khi chạy train thật
 DEBUGGING = False
 # Đánh giá binary classify
@@ -334,7 +334,7 @@ def main():
     )
     print("Training model...")
     # fit trả về self, path trả về path_results
-    path = model.path(X_train, y_train, validation_split=0.125)
+    path = model.path(X_train, y_train, validation_split=0.125, min_K=K)
 
     print("Training complete.")
 
@@ -487,6 +487,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
     # tune_M()
-    # tune_M_downstream()
+    tune_M_downstream()

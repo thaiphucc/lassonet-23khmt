@@ -71,6 +71,7 @@ def calculate_and_plot_metrics(y_test, y_pred, y_prob=None, dataset=None, method
     print(f"Accuracy: {acc:.4f}")
 
     if eval_binary:
+        print(f'{y_prob.tolist() = }')
         prec = precision_score(y_test, y_pred, average='binary', pos_label=1)
         rec = recall_score(y_test, y_pred, average='binary', pos_label=1)
         f1 = f1_score(y_test, y_pred, average='binary', pos_label=1)
