@@ -1,19 +1,14 @@
 # https://github.com/lasso-net/lassonet/blob/master/experiments/data_utils.py
-import pickle
-from collections import defaultdict
-from os.path import join
 from pathlib import Path
-import tensorflow_datasets as tfds
-import gzip
-
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import pandas as pd
-import tensorflow as tf
 from PIL import Image
+import struct
+import array
 
 def load_mice_protein(one_hot=False):
     filling_value = -100000
@@ -21,7 +16,7 @@ def load_mice_protein(one_hot=False):
         "../data/mice_protein/Data_Cortex_Nuclear.csv",
         delimiter=",",
         skip_header=1,
-        usecols=(1, 78),
+        usecols=range(1, 78),
         filling_values=filling_value,
         encoding="UTF-8",
     )
@@ -51,7 +46,7 @@ def load_mice_protein(one_hot=False):
     Y = OneHotEncoder().fit_transform(DY.reshape(-1, 1)).toarray()
     if not one_hot:
         Y = DY
-    indices = np.arrange(X.shape[0])
+    indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
     X = X[indices]
     Y = Y[indices]
@@ -60,29 +55,29 @@ def load_mice_protein(one_hot=False):
     train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.2)
     return (train_X, train_Y), (test_X, test_Y)
 
-import os
-
-def read_mnist(mnist_file):
-    if os.path.isfile(mnist_file) == False:
-        mnist_file = os.path.join('data', 'mnist.pkl.gz')
-    
-    f = gzip.open(mnist_file, 'rb')
-    train_data, val_data, test_data = pickle.load(f, encoding='latin1')
-    f.close()
-    
-    train_X, train_Y = train_data
-    val_X, val_Y = val_data
-    test_X, test_Y = test_data    
-    
-    return train_X, train_Y, val_X, val_Y, test_X, test_Y
+def load_mnist_data(filepath_images, filepath_labels):
+    with open(filepath_images, 'rb') as file:
+        magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
+        if magic != 2051:
+            raise ValueError(f'Magic number mismatch, expected 2051, got {magic}')
+        image_data = array.array("B", file.read())
+    images = np.array(image_data).reshape(size, rows * cols).astype(np.float32)
+    label_data = []
+    with open(filepath_labels, 'rb') as file:
+        magic, size = struct.unpack(">II", file.read(8))
+        if magic != 2049:
+            raise ValueError(f"Magic number mismatch, expected 2049, got {magic}")
+        label_data = array.array("B", file.read())
+    labels = np.array(label_data).astype(np.float32)
+    return images, labels
 
 def load_data(fashion=False, digit=None, normalize=False):
     if fashion:
-        (x_train, y_train), (x_test, y_test) = (
-            tf.keras.datasets.fashion_mnist.load_data()
-        )
+        x_train, y_train = load_mnist_data("../data/fashion-mnist/train-images-idx3-ubyte", "../data/fashion-mnist/train-labels-idx1-ubyte")
+        x_test, y_test = load_mnist_data("../data/fashion-mnist/t10k-images-idx3-ubyte", "../data/fashion-mnist/t10k-labels-idx1-ubyte")
     else:
-        (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+        x_train, y_train = load_mnist_data("../data/mnist/train-images.idx3-ubyte", "../data/mnist/train-labels.idx1-ubyte")
+        x_test, y_test = load_mnist_data("../data/mnist/t10k-images.idx3-ubyte", "../data/mnist/t10k-labels.idx1-ubyte")
 
     if digit is not None and 0 <= digit and digit <= 9:
         train = test = {y: [] for y in range(10)}
@@ -92,20 +87,14 @@ def load_data(fashion=False, digit=None, normalize=False):
             test[y].append(x)
 
         for y in range(10):
-
             train[y] = np.asarray(train[y])
             test[y] = np.asarray(test[y])
 
         x_train = train[digit]
         x_test = test[digit]
 
-    x_train = x_train.reshape((-1, x_train.shape[1] * x_train.shape[2])).astype(
-        np.float32
-    )
-    x_test = x_test.reshape((-1, x_test.shape[1] * x_test.shape[2])).astype(np.float32)
     if normalize:
-        X = np.concatenate((x_train, x_test))
-        X = (X - X.min()) / (X.max() - X.min())
+        X = MinMaxScaler().fit_transform(np.concatenate((x_train, x_test)))
         x_train = X[: len(y_train)]
         x_test = X[len(y_train) :]
 
@@ -154,25 +143,25 @@ def load_mnist_two_digits(digit1, digit2):
 
 def load_isolet():
     train_X = np.genfromtxt(
-        "./data/isolet/isolet1234.data",
+        "../data/isolet/isolet1234.data",
         delimiter=",",
         usecols=range(0, 617),
         encoding="UTF-8",
     )
     train_Y = np.genfromtxt(
-        "./data/isolet/isolet1234.data",
+        "../data/isolet/isolet1234.data",
         delimiter=",",
         usecols=[617],
         encoding="UTF-8",
     )
     test_X = np.genfromtxt(
-        "./data/isolet/isolet5.data",
+        "../data/isolet/isolet5.data",
         delimiter=",",
         usecols=range(0, 617),
         encoding="UTF-8",
     )
     test_Y = np.genfromtxt(
-        "./data/isolet/isolet5.data",
+        "../data/isolet/isolet5.data",
         delimiter=",",
         usecols=[617],
         encoding="UTF-8",
@@ -190,13 +179,13 @@ def load_coil_20():
     for i in range(1, 21):
         for j in range(72):
             obj_img = Image.open(
-                f"../data/coil-20/coil-20-proc/obj{i}_{j}.png"
+                f"../data/coil-20/coil-20-proc/obj{i}__{j}.png"
             )
             rescaled = obj_img.resize((20, 20))
             data[(i - 1) * 72 + j] = np.array(rescaled).reshape(400)
             targets[(i - 1) * 72 + j] = i - 1
     data = MinMaxScaler().fit_transform(data)
-    indices = np.arrange(data.shape[0])
+    indices = np.arange(data.shape[0])
     np.random.shuffle(indices)
     data = data[indices]
     targets = targets[indices]
