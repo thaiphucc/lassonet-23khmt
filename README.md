@@ -76,11 +76,9 @@ if __name__ == "__main__":
 
 ## Các Bộ dữ liệu được Hỗ trợ
 
-Module `data_utils.py` hỗ trợ các bộ dữ liệu sau:
 - **MNIST**: Chữ số viết tay.
 - **ISOLET**: Nhận dạng giọng nói các chữ cái cô lập.
 - **MICE**: Biểu hiện protein ở chuột.
 - **COIL-20**: Danh mục đối tượng.
 - **Activity**: Nhận dạng hoạt động con người.
 - **Mushroom**: Phân loại nấm (Dữ liệu dạng bảng).
-```
