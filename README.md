@@ -1,4 +1,4 @@
-Repo này chứa bản cài đặt của LassoNet, một kiến trúc mạng nơ-ron được thiết kế để lựa chọn đặc trưng và tạo tính thưa, như được mô tả trong bài báo "LassoNet: A Neural Network with Feature Sparsity".
+Repo này chứa bản cài đặt của LassoNet, một kiến trúc mạng nơ-ron được thiết kế để lựa chọn đặc trưng, như được mô tả trong bài báo "LassoNet: A Neural Network with Feature Sparsity".
 
 ## Cấu trúc file
 
