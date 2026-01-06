@@ -43,7 +43,7 @@ K = 50
 LAMBDA_START = "auto"
 PATH_MULTIPLIER = 0.02
 # Biến debug để tìm lỗi tước khi chạy train thật
-DEBUGGING = True
+DEBUGGING = False
 # Đánh giá binary classify
 EVAL_BINARY = dataset == 'Mushroom'
 
@@ -102,10 +102,10 @@ def save_artifacts(estimator, X, y, prefix):
 def _load_dataset():
     (X_train, y_train), (X_test, y_test) = load_dataset(dataset)
     if DEBUGGING:
-        X_train = X_train[:20]
-        y_train = y_train[:20]
-        X_test = X_test[:20]
-        y_test = y_test[:20]
+        X_train = X_train[:100]
+        y_train = y_train[:100]
+        X_test = X_test[:100]
+        y_test = y_test[:100]
     return (X_train, y_train), (X_test, y_test)
 
 
@@ -261,7 +261,8 @@ def tune_M():
         # Tạo ID duy nhất
         run_id = str(uuid.uuid4())[:8]
         M_val = estimator.M
-        prefix = f"tune_M_{M_val}_{run_id}"
+        os.makedirs("results", exist_ok=True)
+        prefix = f"results/tune_M_{M_val}_{run_id}"
         save_artifacts(estimator, X, y, prefix)
 
         best_step = None
