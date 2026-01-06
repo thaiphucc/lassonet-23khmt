@@ -12,10 +12,10 @@ Repo này chứa bản cài đặt của LassoNet, một kiến trúc mạng nơ
 
 ## Yêu cầu
 
-Đảm bảo bạn đã cài đặt các thư viện sau:
+Đảm bảo bạn đã cài đặt các thư viện cần thiết:
 
 ```bash
-pip install torch numpy scipy scikit-learn matplotlib pandas pillow
+pip install -r requirements.txt
 ```
 
 ## Hướng dẫn sử dụng
@@ -46,14 +46,13 @@ PATH_MULTIPLIER = 0.02
 
 ### Chạy thực nghiệm
 
-Để chạy toàn bộ quá trình huấn luyện đường dẫn điều chuẩn, chọn lọc đặc trưng và đánh giá hạ nguồn, thực thi lệnh sau từ thư mục gốc:
+Để chạy toàn bộ quá trình huấn luyện (đường dẫn điều chuẩn và lưu kết quả), thực thi lệnh sau:
 
 ```bash
-python lassonet/main.py
+python lassonet/main.py train
 ```
 
 ### Flow
-
 1.  **Tải dữ liệu**: Bộ dữ liệu được chỉ định sẽ được tải và tiền xử lý.
 2.  **Huấn luyện đường di điều chuẩn**: Mô hình LassoNet huấn luyện với các giá trị lambda tăng dần (phạt L1) để làm thưa các trọng số lớp skip ($\theta$).
 3.  **Lưu kết quả**:
@@ -66,13 +65,31 @@ python lassonet/main.py
 
 ## Tune siêu tham số
 
-Để tinh chỉnh hệ số phân cấp ($M$), bạn có thể bỏ chú thích lời gọi hàm `tune_M()` trong khối `if __name__ == "__main__":` của `lassonet/main.py`:
+Để tinh chỉnh hệ số phân cấp ($M$) thông qua Grid-Search (M = 5, 10, 15):
 
-```python
-if __name__ == "__main__":
-    # main()
-    tune_M() # Chạy GridSearchCV cho M = [5, 10, 15]
+```bash
+python lassonet/main.py tune
 ```
+
+## Đánh giá Downstream
+
+Để đánh giá hiệu năng phân lớp với các mô hình đã chọn từ bước `tune` (theo từng mức `M`):
+
+```bash
+# Đánh giá cho tất cả M (5, 10, 15)
+python lassonet/main.py downstream
+
+# Đánh giá cho cụ thể M (ví dụ M=10)
+python lassonet/main.py downstream -M 10
+```
+
+**Lưu ý quan trọng:**
+1.  **Vị trí file**: Hàm mặc định tìm kiếm các file kết quả `.pkl` trong thư mục `run_cv_3`.
+    - Các file `.pkl` được tạo ra từ quá trình `tune` có thể nằm ở thư mục chạy.
+    - Bạn **BẮT BUỘC** phải di chuyển thủ công các file này vào thư mục `run_cv_3` trước khi chạy lệnh downstream.
+2.  **Cơ chế chọn model**:
+    - Với giá trị `M` (ví dụ 10), hàm sẽ tìm tất cả các file tương ứng.
+    - Hàm sẽ **chọn ngẫu nhiên một model** (một file `.pkl`) đại diện cho giá trị `M` đó để train lại downstream learner (thay vì chạy hết tất cả các fold của Cross-Validation) để tiết kiệm thời gian.
 
 ## Các Bộ dữ liệu được Hỗ trợ
 

@@ -1,8 +1,12 @@
 torch
+torchvision
 numpy
 scipy
 scikit-learn
 matplotlib
 pandas
+pillow
+tensorflow
+tensorflow_datasets
 tqdm
 jupyterlab

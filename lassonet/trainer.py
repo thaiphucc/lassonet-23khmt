@@ -56,8 +56,6 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
         else:
             self.epoch_init, self.epoch_path = epochs
 
-        # Xử lý optimize
-        # Định nghĩa factory tại đây, nhưng việc khởi tạo xảy ra trong fit/path
         self.optim_init = partial(torch.optim.Adam, lr=optim_lr)
         self.optim_path = partial(torch.optim.SGD, lr=optim_lr, momentum=0.9)
 
@@ -84,7 +82,7 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
             else:
                 return (output > 0).float().cpu().numpy()
 
-    def path(self, X, y, lambda_seq=None, validation_split=0.2, min_K=50):
+    def path(self, X, y, lambda_seq=None, validation_split=0.2, min_K=1):
         """
         Run the regularization path and return the results.
         """
@@ -93,7 +91,7 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
         )
         return self.path_results_
 
-    def fit(self, X, y, lambda_seq=None, validation_split=0.2, min_K=50):
+    def fit(self, X, y, lambda_seq=None, validation_split=0.2, min_K=1):
         """
         Triển khai Algorithm 1: Training LassoNet
         Quá trình validation được thực hiện dọc theo đường dẫn (path) để chọn mô hình tốt nhất.
@@ -173,7 +171,6 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
         best_val_score = -np.inf
         best_state = None
 
-        # Optimizer for path
         optimizer = self.optim_path(self.model.parameters())
 
         if self.lambda_start == "auto":
@@ -202,7 +199,7 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
 
             path_iterator = lambda_generator()
 
-        k = input_dim  # Start with all features active for auto-path logic
+        k = input_dim  # Bắt đầu với tất cả các đặc trưng
 
         for lam, check_sparsity in path_iterator:
             val_score, val_loss = self._train(
@@ -227,12 +224,11 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
 
             should_save = False
             if check_sparsity:
-                # Auto path logic
                 if current_k < k:
                     should_save = True
                     k = current_k
 
-                # Check termination condition for auto path
+                # Kiểm tra điều kiện dừng
                 if k == 0:
                     should_save = True
                     break
@@ -264,7 +260,6 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
             if current_k < min_K:
                 break
 
-        # Load best model
         if best_state is not None:
             if self.verbose:
                 print(

@@ -33,26 +33,23 @@ from lassonet.utils import (
     train_svc,
 )
 
-# Các tham số thí nghiệm
+# ============= Các tham số thực nghiệm =============
 BATCH_SIZE = 256
 EPOCHS = 1000
 LR = 1e-3
 PATIENCE = 10
-dataset = "MNIST"
-# K = 9 + 9 + 7 + 5  # Mục tiêu của chúng ta K đặc trưng
-# LAMBDA_START = 1.849
-# PATH_MULTIPLIER = 0.04
+dataset = "ISOLET"
 K = 50
 LAMBDA_START = "auto"
 PATH_MULTIPLIER = 0.02
 # Biến debug để tìm lỗi tước khi chạy train thật
-DEBUGGING = False
+DEBUGGING = True
 # Đánh giá binary classify
-EVAL_BINARY = True
-
-print(f"{K = }")
+EVAL_BINARY = dataset == 'Mushroom'
 
 
+
+# ============= Implementation ==============
 device = "cuda" if torch.cuda.is_available() else "cpu"
 PLOT_AVAILABLE = True
 
@@ -61,7 +58,7 @@ PLOT_AVAILABLE = True
 def score_function(y_true, y_pred):
     return accuracy_score(y_true, y_pred)
 
-
+# Hàm lưu các biểu đồ, pkl
 def save_artifacts(estimator, X, y, prefix):
     path = estimator.path_results_
     if not path:
@@ -112,9 +109,15 @@ def _load_dataset():
     return (X_train, y_train), (X_test, y_test)
 
 
-def tune_M_downstream():
+def tune_M_downstream(target_M=None):
     """
-    Huấn luyện downstream trên các (M, tập đặc trưng) được chọn bởi tune_M(), để đánh giá accuracy cho phân lớp
+    Đánh giá accuracy qua downstream learner của các tập đặc trưng đã được chọn từ bước tune_M(),
+    trên các (M, tập đặc trưng) được chọn bởi tune_M(), để đánh giá accuracy cho phân lớp
+    Quy trình
+        1. Tải các đường dẫn điều chuẩn đã lưu từ các lần chạy trước.
+        2. Trích xuất mặt nạ đặc trưng (feature mask).
+        3. Huấn luyện lại một mạng LassoNet mới (sparse model) chỉ trên các đặc trưng đã chọn (Retraining/Fine-tuning).
+       Bước này kiểm chứng xem các đặc trưng được LassoNet chọn có thực sự mang thông tin quan trọng cho việc phân loại hay không, độc lập với quá trình tìm đường đi điều chuẩn.
     """
     (X_train, y_train), (X_test, y_test) = _load_dataset()
 
@@ -135,7 +138,11 @@ def tune_M_downstream():
     print(f"Found {len(pkl_files)} pkl files: {pkl_files}")
 
     # Grid search các giá trị M
-    target_Ms = {5, 10, 15}
+    if target_M is not None:
+        target_Ms = {target_M}
+    else:
+        target_Ms = {5, 10, 15}
+    
     processed_Ms = set()
     files_to_process = []
 
@@ -258,7 +265,6 @@ def tune_M():
         save_artifacts(estimator, X, y, prefix)
 
         best_step = None
-
         selected_step = None
         for step in path:
             if step["k"] <= K:
@@ -345,9 +351,6 @@ def main():
     )
     n_features = [step["k"] for step in path]
 
-    # for k, acc in zip(n_features, accuracies):
-    #     print(f"Features: {k}, Accuracy: {acc:.4f}")
-
     # Lưu
     desired_save = None
     for save in path:
@@ -362,25 +365,7 @@ def main():
             SELECTED_FEATURES = mask
             break
 
-    # for step in path:
-    #     # Load state
-    #     model.model.layers.load_state_dict(step['W'])
-    #     # 'theta' is numpy array, need to convert to tensor and put in skip.weight
-    #     model.model.skip.weight.data = torch.from_numpy(step['theta']).to(model.device)
-
-    #     # Predict
-    #     model.model.eval()
-    #     with torch.no_grad():
-    #         logits = model.model(X_test_t)
-    #         predictions = torch.argmax(logits, dim=1).numpy()
-
-    #     acc = accuracy_score(y_test, predictions)
-
-    #     n_features.append(step['k'])
-    #     accuracies.append(acc)
-    #     print(f"Features: {step['k']}, Accuracy: {acc:.4f}")
-
-    # Plotting
+    # Plot
     if PLOT_AVAILABLE:
         lambdas = [step["lambda"] for step in path]
 
@@ -446,7 +431,7 @@ def main():
     with open(f"{dataset}_path.pkl", "wb") as f:
         pickle.dump(path, f)
 
-    # Collection for ROC Comparison
+    # Danh sách lưu kết quả để so sánh ROC
     roc_collection = []
 
     if EVAL_BINARY:
@@ -460,7 +445,7 @@ def main():
             roc_collection=roc_collection,
         )
 
-    # Train ExtraTrees on selected features
+    # Huấn luyện ExtraTrees trên các đặc trưng đã chọn
     train_extra_trees(
         X_train_selected,
         y_train,
@@ -471,7 +456,7 @@ def main():
         eval_binary=EVAL_BINARY,
     )
 
-    # Train SVC on selected features
+    # Huấn luyện SVC trên các đặc trưng đã chọn
     train_svc(
         X_train_selected,
         y_train,
@@ -482,11 +467,30 @@ def main():
         eval_binary=EVAL_BINARY,
     )
 
-    # Plot Comparison
+    # Vẽ biểu đồ so sánh
     plot_comparison_roc(roc_collection, dataset)
 
 
 if __name__ == "__main__":
-    # main()
-    # tune_M()
-    tune_M_downstream()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="LassoNet Experiment Runner")
+    parser.add_argument(
+        "mode",
+        choices=["train", "tune", "downstream"],
+        help="Mode to run: 'train' (main), 'tune' (tune_M), 'downstream' (tune_M_downstream)",
+    )
+    parser.add_argument(
+        "-M",
+        type=int,
+        help="Specific M value to run downstream evaluation for (only used in 'downstream' mode)",
+    )
+    args = parser.parse_args()
+
+    if args.mode == "train":
+        main()
+    elif args.mode == "tune":
+        tune_M()
+    elif args.mode == "downstream":
+        tune_M_downstream(target_M=args.M)
+

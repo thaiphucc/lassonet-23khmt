@@ -13,7 +13,7 @@ import array
 def load_mice_protein(one_hot=False):
     filling_value = -100000
     X = np.genfromtxt(
-        "../data/mice_protein/Data_Cortex_Nuclear.csv",
+        "./data/mice_protein/Data_Cortex_Nuclear.csv",
         delimiter=",",
         skip_header=1,
         usecols=range(1, 78),
@@ -21,7 +21,7 @@ def load_mice_protein(one_hot=False):
         encoding="UTF-8",
     )
     classes = np.genfromtxt(
-        "../data/mice_protein/Data_Cortex_Nuclear.csv",
+        "./data/mice_protein/Data_Cortex_Nuclear.csv",
         delimiter=",",
         skip_header=1,
         usecols=range(78, 81),
@@ -73,11 +73,11 @@ def load_mnist_data(filepath_images, filepath_labels):
 
 def load_data(fashion=False, digit=None, normalize=False):
     if fashion:
-        x_train, y_train = load_mnist_data("../data/fashion-mnist/train-images-idx3-ubyte", "../data/fashion-mnist/train-labels-idx1-ubyte")
-        x_test, y_test = load_mnist_data("../data/fashion-mnist/t10k-images-idx3-ubyte", "../data/fashion-mnist/t10k-labels-idx1-ubyte")
+        x_train, y_train = load_mnist_data("./data/fashion-mnist/train-images-idx3-ubyte", "./data/fashion-mnist/train-labels-idx1-ubyte")
+        x_test, y_test = load_mnist_data("./data/fashion-mnist/t10k-images-idx3-ubyte", "./data/fashion-mnist/t10k-labels-idx1-ubyte")
     else:
-        x_train, y_train = load_mnist_data("../data/mnist/train-images.idx3-ubyte", "../data/mnist/train-labels.idx1-ubyte")
-        x_test, y_test = load_mnist_data("../data/mnist/t10k-images.idx3-ubyte", "../data/mnist/t10k-labels.idx1-ubyte")
+        x_train, y_train = load_mnist_data("./data/mnist/train-images.idx3-ubyte", "./data/mnist/train-labels.idx1-ubyte")
+        x_test, y_test = load_mnist_data("./data/mnist/t10k-images.idx3-ubyte", "./data/mnist/t10k-labels.idx1-ubyte")
 
     if digit is not None and 0 <= digit and digit <= 9:
         train = test = {y: [] for y in range(10)}
@@ -143,25 +143,25 @@ def load_mnist_two_digits(digit1, digit2):
 
 def load_isolet():
     train_X = np.genfromtxt(
-        "../data/isolet/isolet1234.data",
+        "./data/isolet/isolet1234.data",
         delimiter=",",
         usecols=range(0, 617),
         encoding="UTF-8",
     )
     train_Y = np.genfromtxt(
-        "../data/isolet/isolet1234.data",
+        "./data/isolet/isolet1234.data",
         delimiter=",",
         usecols=[617],
         encoding="UTF-8",
     )
     test_X = np.genfromtxt(
-        "../data/isolet/isolet5.data",
+        "./data/isolet/isolet5.data",
         delimiter=",",
         usecols=range(0, 617),
         encoding="UTF-8",
     )
     test_Y = np.genfromtxt(
-        "../data/isolet/isolet5.data",
+        "./data/isolet/isolet5.data",
         delimiter=",",
         usecols=[617],
         encoding="UTF-8",
@@ -179,7 +179,7 @@ def load_coil_20():
     for i in range(1, 21):
         for j in range(72):
             obj_img = Image.open(
-                f"../data/coil-20/coil-20-proc/obj{i}__{j}.png"
+                f"./data/coil-20/coil-20-proc/obj{i}__{j}.png"
             )
             rescaled = obj_img.resize((20, 20))
             data[(i - 1) * 72 + j] = np.array(rescaled).reshape(400)
@@ -195,22 +195,22 @@ def load_coil_20():
 
 def load_activity():
     train_X = np.genfromtxt(
-        "../data/activity/final_X_train.txt",
+        "./data/activity/final_X_train.txt",
         delimiter=",",
         encoding="UTF-8",
     )
     test_X = np.genfromtxt(
-        "../data/activity/final_X_test.txt",
+        "./data/activity/final_X_test.txt",
         delimiter=",",
         encoding="UTF-8",
     )
     train_Y = np.genfromtxt(
-        "../data/activity/final_y_train.txt",
+        "./data/activity/final_y_train.txt",
         delimiter=",",
         encoding="UTF-8",
     )
     test_Y = np.genfromtxt(
-        "../data/activity/final_y_test.txt",
+        "./data/activity/final_y_test.txt",
         delimiter=",",
         encoding="UTF-8",
     )
