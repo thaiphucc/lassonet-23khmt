@@ -114,7 +114,7 @@ def tune_M_downstream(target_M=None):
     Đánh giá accuracy qua downstream learner của các tập đặc trưng đã được chọn từ bước tune_M(),
     trên các (M, tập đặc trưng) được chọn bởi tune_M(), để đánh giá accuracy cho phân lớp
     Quy trình
-        1. Tải các đường dẫn điều chuẩn đã lưu từ các lần chạy trước.
+        1. Tải các đường đi điều chuẩn đã lưu từ các lần chạy trước.
         2. Trích xuất mặt nạ đặc trưng (feature mask).
         3. Huấn luyện lại một mạng LassoNet mới (sparse model) chỉ trên các đặc trưng đã chọn (Retraining/Fine-tuning).
        Bước này kiểm chứng xem các đặc trưng được LassoNet chọn có thực sự mang thông tin quan trọng cho việc phân loại hay không, độc lập với quá trình tìm đường đi điều chuẩn.

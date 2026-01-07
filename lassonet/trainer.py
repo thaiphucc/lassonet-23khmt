@@ -94,7 +94,7 @@ class LassoNetClassifier(BaseEstimator, ClassifierMixin):
     def fit(self, X, y, lambda_seq=None, validation_split=0.2, min_K=1):
         """
         Triển khai Algorithm 1: Training LassoNet
-        Quá trình validation được thực hiện dọc theo đường dẫn (path) để chọn mô hình tốt nhất.
+        Quá trình validation được thực hiện dọc theo đường đi (path) để chọn mô hình tốt nhất.
         """
         self.path_results_ = []
 
