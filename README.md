@@ -31,7 +31,7 @@ Trước khi bắt đầu, cần đảm bảo đã cài đặt các thư viện 
 pip install -r requirements.txt
 ```
 
-Tải dataset nhóm đã đính kèm và đặt ở `data/`
+Tải dataset nhóm đã đính kèm ở Appendix cuối của report, sau đó đặt ở `data/`
 
 ## Hướng dẫn sử dụng
 
